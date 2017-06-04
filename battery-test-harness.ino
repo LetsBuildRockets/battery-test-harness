@@ -79,6 +79,8 @@ void loop() {
 
 // this could be nicer, but not without some serious preproc abuse
 void firstRow() {
+  Serial.print("millis()");
+  Serial.print(",");
   Serial.print("getTemp()");
   Serial.print(",");
   Serial.print("getVoltage()");
@@ -90,7 +92,8 @@ void firstRow() {
 }
 
 void logData() {
-  // getTemp, getVoltage, isCharging, isFull
+  Serial.print(millis());
+  Serial.print(",");
   Serial.print(getTemp());
   Serial.print(",");
   Serial.print(getVoltage());
