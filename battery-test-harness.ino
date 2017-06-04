@@ -8,7 +8,7 @@
 #define CHARGE_NOT_DONE_PIN 4
 
 // params
-const int POLL_MS = 1000;
+const int POLL_MS = 10000;
 const int CELL_COUNT = 3;
 const float MIN_CELL_VOLTAGE = 3.4;
 const float THERM_A1 = 3.354016E-3;
