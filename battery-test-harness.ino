@@ -6,6 +6,7 @@
 #define RELAY_LOAD 3
 #define RELAY_CHARGE 2
 #define CHARGE_NOT_DONE_PIN 4
+#define ALARM_PIN 5
 
 // params
 const int POLL_MS = 10000;
@@ -21,7 +22,10 @@ const float THERM_D1 = 6.383091E-8;
 void setup() {
   pinMode(RELAY_LOAD, OUTPUT);
   pinMode(RELAY_CHARGE, OUTPUT);
+  pinMode(ALARM_PIN, OUTPUT);
   pinMode(CHARGE_NOT_DONE_PIN, INPUT);
+
+  digitalWrite(ALARM_PIN, LOW);
 
   Serial.begin(115200);
   firstRow();
@@ -53,7 +57,7 @@ bool isConnected() {
 }
 
 bool isFull() {
-  return isConnected() && !digitalRead(CHARGE_NOT_DONE_PIN);
+  return /*isConnected() && */!digitalRead(CHARGE_NOT_DONE_PIN) && digitalRead(RELAY_CHARGE);
 }
 
 float getVoltage() {
@@ -88,6 +92,8 @@ void firstRow() {
   Serial.print("bs.isCharging");
   Serial.print(",");
   Serial.print("isFull()");
+  Serial.print(",");
+  Serial.print("isEmpty()");
   Serial.println();
 }
 
@@ -101,6 +107,8 @@ void logData() {
   Serial.print(bs.isCharging);
   Serial.print(",");
   Serial.print(isFull());
+  Serial.print(",");
+  Serial.print(isEmpty());
   Serial.println();
 }
 
@@ -113,14 +121,22 @@ void charge(ChargeState cs) {
 }
 
 void doStateMachine() {
+  
   // section: early exit conditions
   // please don't change any state here
 
-  if (!isConnected())
+  /*if (!isConnected())
     // no sense in running the harness if there's no battery...
     // TODO: should we reset the harness until the battery's up?
+    return;*/
+  
+  if (getTemp() > 35) {
+    digitalWrite(ALARM_PIN, HIGH);
+    charge(ChargeState::STOP);
     return;
-
+  } else {
+    //digitalWrite(ALARM_PIN, LOW);
+  }
   // this condition accounts for the delay happening first.
   if (bs.waitMs > POLL_MS) {
     // something has put the sensors into an undefined state;
@@ -132,9 +148,6 @@ void doStateMachine() {
   bool isChargingLast = bs.isCharging;
   // you can change state after this line
 
-  if (getTemp() > 35) {
-    charge(ChargeState::STOP);
-  }
     
   if (bs.isCharging) {
     if (!isFull())
@@ -142,7 +155,7 @@ void doStateMachine() {
     else
       bs.isCharging = false;
   } else {
-    if (!isEmpty())
+    if (!isEmpty()||!isConnected())
       charge(ChargeState::DISCHARGE);
     else
       bs.isCharging = true;
@@ -150,5 +163,5 @@ void doStateMachine() {
 
   // section: detect state machine changes and react to them
   if (isChargingLast != bs.isCharging)
-    bs.waitMs = 5000;
+    bs.waitMs = 100;
 }
